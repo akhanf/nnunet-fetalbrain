@@ -5,29 +5,23 @@ configfile: 'config.yml'
 
 subjects,tasks = glob_wildcards(config['in_bold'])
 train_subjects,train_tasks = glob_wildcards(config['in_bold_train'])
+test_subjects,test_tasks = glob_wildcards(config['in_bold_test'])
 
-print(subjects)
-print(tasks)
+#print(subjects)
+#print(tasks)
 
-print(train_subjects)
-print(train_tasks)
-#subjects = ['10']
-#runs = ['13']
+#print(train_subjects)
+#print(train_tasks)
+
 nvols = 110
-
-#training subjects will be 5,6,7,8,9 (will test on 10 and 3)
-#train_subjects,train_runs = glob_wildcards('raw_data/4Dmask_S{subject,[5]}_run{run,[0-9]+}_copy.nii.gz')
-#test_subjects,test_runs = glob_wildcards('raw_data/4Dmask_S{subject,10|3}_run{run,[0-9]+}_copy.nii.gz')
-
 
 imgids = expand(expand('sub-{subject}_task-{task}_vol-{{vol:04d}}',zip,subject=subjects,task=tasks),vol=range(nvols))
 train_imgids = expand(expand('sub-{subject}_task-{task}_vol-{{vol:04d}}',zip,subject=train_subjects,task=train_tasks),vol=range(nvols))
+test_imgids = expand(expand('sub-{subject}_task-{task}_vol-{{vol:04d}}',zip,subject=test_subjects,task=test_tasks),vol=range(nvols))
 
-#test_imgids = expand(expand('s{subject}r{run}v{{vol:04d}}',zip,subject=test_subjects,run=test_runs),vol=range(nvols))
 
-print(imgids)
-print(train_imgids)
-#print(test_imgids)
+#print(imgids)
+#print(train_imgids)
 
 
 
@@ -40,6 +34,17 @@ rule all_train:
                     checkpoint=config['checkpoint'], 
                     trainer=config['trainer'])
 
+rule all_test:
+    input:
+        predicted_lbls = expand(
+                            'raw_data/nnUNet_predictions/{arch}/{unettask}/'
+                            '{trainer}__nnUNetPlansv2.1/{checkpoint}/'
+                            'fetal_{imgid}_0000.nii.gz', 
+                            imgid=test_imgids,
+                            arch=config['architecture'],
+                            unettask=config['unettask'],
+                            checkpoint=config['checkpoint'],
+                            trainer=config['trainer'])
 
 rule split:
     """ splits bold 4d vol """
@@ -77,6 +82,14 @@ rule cp_training_img:
     threads: 32 #to make it serial on a node
     group: 'preproc'
     shell: 'cp {input} {output}'
+
+rule cp_test_img:
+    input: bids(subject='{subject}',task='{task}',desc='zeropad',suffix="bold{vol}.nii.gz")
+    output: 'raw_data/nnUNet_raw_data/{unettask}/imagesTs/fetal_sub-{subject}_task-{task}_vol-{vol}_0000.nii.gz'
+    threads: 32 #to make it serial on a node
+    group: 'preproc'
+    shell: 'cp {input} {output}'
+
 
 
 
@@ -134,7 +147,7 @@ rule train_fold:
         dataset_json = 'preprocessed/{unettask}/dataset.json',
     params:
         nnunet_env_cmd = get_nnunet_env_tmp,
-        rsync_to_tmp = f"rsync -av {config['nnunet_env']['nnUNet_preprocessed']} $TMPDIR",
+        rsync_to_tmp = f"rsync -av {config['nnunet_env']['nnUNet_preprocessed']} $SLURM_TMPDIR",
         #add --continue_training option if a checkpoint exists
         checkpoint_opt = get_checkpoint_opt
     output:
@@ -168,18 +181,26 @@ rule package_trained_model:
     shell:
         'tar -cvf {output} -C {params.trained_model_dir} {params.files_to_tar}'
 
-"""
 rule predict_test_subj:
     input:
         in_training_folder = expand('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}',fold=range(5),allow_missing=True),
         latest_model = expand('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/{checkpoint}.model',fold=range(5),allow_missing=True),
-        testing_imgs = expand('raw_data/nnUNet_raw_data/{unettask}/imagesTs/hcp_{subject}{hemi}_0000.nii.gz',subject=testing_subjects, hemi=hemis, allow_missing=True),
+        testing_imgs = expand(
+                            'raw_data/nnUNet_raw_data/{unettask}/'
+                            'imagesTs/fetal_{imgid}_0000.nii.gz',
+                            imgid=test_imgids,
+                            allow_missing=True),
     params:
         in_folder = 'raw_data/nnUNet_raw_data/{unettask}/imagesTs',
         out_folder = 'raw_data/nnUNet_predictions/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/{checkpoint}',
         nnunet_env_cmd = get_nnunet_env,
     output:
-        testing_imgs = expand('raw_data/nnUNet_predictions/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/{checkpoint}/hcp_{subject}{hemi}.nii.gz',subject=testing_subjects, hemi=hemis, allow_missing=True),
+        predicted_lbls = expand(
+                            'raw_data/nnUNet_predictions/{arch}/{unettask}/'
+                            '{trainer}__nnUNetPlansv2.1/{checkpoint}/'
+                            'fetal_{imgid}.nii.gz',
+                            imgid=test_imgids,
+                            allow_missing=True)
     threads: 8 
     resources:
         gpus = 1,
@@ -188,9 +209,8 @@ rule predict_test_subj:
     group: 'inference'
     shell:
         '{params.nnunet_env_cmd} && '
-        'nnUNet_predict  -chk {wildcards.checkpoint}  -i {params.in_folder} -o {params.out_folder} -t {wildcards.task}'
+        'nnUNet_predict  -chk {wildcards.checkpoint}  -i {params.in_folder} -o {params.out_folder} -t {wildcards.unettask}'
 
    
         
 
-"""
