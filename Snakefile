@@ -36,15 +36,17 @@ rule all_train:
 
 rule all_test:
     input:
-        predicted_lbls = expand(
-                            'raw_data/nnUNet_predictions/{arch}/{unettask}/'
-                            '{trainer}__nnUNetPlansv2.1/{checkpoint}/'
-                            'fetal_{imgid}_0000.nii.gz', 
-                            imgid=test_imgids,
-                            arch=config['architecture'],
-                            unettask=config['unettask'],
-                            checkpoint=config['checkpoint'],
-                            trainer=config['trainer'])
+        predicted_4d  = expand(
+                    bids(root='predicted',
+                            subject='{subject}',
+                            task='{task}',
+                            desc='nnunet',
+                            suffix="mask.nii.gz"),
+                            zip,
+                            subject=test_subjects,
+                            task=test_tasks)
+
+
 
 rule split:
     """ splits bold 4d vol """
@@ -212,5 +214,29 @@ rule predict_test_subj:
         'nnUNet_predict  -chk {wildcards.checkpoint}  -i {params.in_folder} -o {params.out_folder} -t {wildcards.unettask}'
 
    
-        
+print(bids(root='predicted',
+                            subject='{subject}',
+                            task='{task}',
+                            desc='nnunet',
+                            suffix="mask.nii.gz"))
+                            
+rule merge_mask:
+    input:
+        expand('raw_data/nnUNet_predictions/{arch}/{unettask}/'
+                '{trainer}__nnUNetPlansv2.1/{checkpoint}/'
+                'fetal_sub-{subject}_task-{task}_vol-{vol:04d}.nii.gz',
+                    vol=range(nvols),
+                    arch=config['architecture'], 
+                    unettask=config['unettask'],
+                    checkpoint=config['checkpoint'], 
+                    trainer=config['trainer'],
+                    allow_missing=True)
+    output:
+            bids(root='predicted',
+                            subject='{subject}',
+                            task='{task}',
+                            desc='nnunet',
+                            suffix="mask.nii.gz")
+    shell:
+        'fslmerge -t {output} {input}'
 
