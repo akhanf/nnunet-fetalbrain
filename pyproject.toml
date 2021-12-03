@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "fetal_boldbrainseg"
+name = "nnunet_fetalbrain"
 version = "0.1.0"
-description = "Snakebids app for fetal bold brain segmentation"
+description = "Snakemake workflow for fetal bold brain segmentation"
 authors = ["akhanf <alik@robarts.ca>"]
 
 [tool.poetry.dependencies]

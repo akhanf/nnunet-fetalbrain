@@ -1,8 +1,8 @@
-in_mask: '../fetal_data/sub-{subject}/masks/sub-{subject}_task-{task}_bold_mask.nii.gz'
-in_bold: '../fetal_data/sub-{subject}/func/sub-{subject}_task-{task}_bold.nii.gz'
+in_mask: 'fetal_data/sub-{subject}/masks/sub-{subject}_task-{task}_bold_mask.nii.gz'
+in_bold: 'fetal_data/sub-{subject}/func/sub-{subject}_task-{task}_bold.nii.gz'
 
-in_bold_train: '../fetal_data/sub-{subject,S6|S7|S9}/func/sub-{subject}_task-{task}_bold.nii.gz'
-in_bold_test: '../fetal_data/sub-{subject,S1|S3|S10}/func/sub-{subject}_task-{task}_bold.nii.gz'
+in_bold_train: 'fetal_data/sub-{subject,S6|S7|S9}/func/sub-{subject}_task-{task}_bold.nii.gz'
+in_bold_test: 'fetal_data/sub-{subject,S1|S3|S10}/func/sub-{subject}_task-{task}_bold.nii.gz'
 
 use_downloaded: 'trainS6S7S9' #if this doesn't exist in download_model, then will train instead
 
