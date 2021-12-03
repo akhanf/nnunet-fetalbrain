@@ -17,9 +17,15 @@ Configure the workflow according to your needs via editing `config.yml` file, sp
 
 You should install your dependencies in a virtual environment. Once you have activated your virtual environment, you can install the dependencies with `pip install .`
 
-A recommended alternative that also takes care of creating a virtual environment is to use Poetry. Once you have poetry installed you can simply use the following to install dependencies into a virtual environment, then activate it:
+A recommended alternative that also takes care of creating a virtual environment is to use Poetry. On OSX or Linux can be installed with:
+```
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+Once you have poetry installed you can simply use the following to install dependencies into a virtual environment, then activate it:
 
 ```
+cd nnunet-fetalbrain
 poetry install
 poetry shell
 ```
