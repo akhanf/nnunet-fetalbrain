@@ -33,6 +33,16 @@ rule all_train:
                     unettask=config['unettask'],
                     checkpoint=config['checkpoint'], 
                     trainer=config['trainer'])
+rule all_model_tar:
+    """Target rule to package trained model into a tar file"""
+    input:
+        model_tar = expand('trained_model.{arch}.{unettask}.{trainer}.{checkpoint}.tar',
+                            arch=config['architecture'], 
+                            unettask=config['unettask'], 
+                            trainer=config['trainer'],
+                            checkpoint=config['checkpoint'])
+
+
 
 rule all_test:
     input:
@@ -46,6 +56,20 @@ rule all_test:
                             subject=test_subjects,
                             task=test_tasks)
 
+model = config['use_downloaded']
+
+if model in config['download_model'].keys():
+
+    rule download_model:
+        params: 
+            url = config['download_model'][model]['url']
+        output: config['download_model'][model]['tar']
+        shell: 'wget {params.url}'
+
+    rule extract_model:
+        input: config['download_model'][model]['tar']
+        output: expand(os.path.join('trained_models',config['download_model'][model]['out']),fold=range(5))
+        shell: 'mkdir -p trained_model && tar -C trained_models -xvf {input}'
 
 
 rule split:
@@ -179,7 +203,7 @@ rule package_trained_model:
         trained_model_dir = config['nnunet_env']['RESULTS_FOLDER'],
         files_to_tar = 'nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1'
     output:
-        model_tar = 'trained_model.{arch}.{task}.{trainer}.{checkpoint}.tar'
+        model_tar = 'trained_model.{arch}.{unettask}.{trainer}.{checkpoint}.tar'
     shell:
         'tar -cvf {output} -C {params.trained_model_dir} {params.files_to_tar}'
 
@@ -214,12 +238,7 @@ rule predict_test_subj:
         'nnUNet_predict  -chk {wildcards.checkpoint}  -i {params.in_folder} -o {params.out_folder} -t {wildcards.unettask}'
 
    
-print(bids(root='predicted',
-                            subject='{subject}',
-                            task='{task}',
-                            desc='nnunet',
-                            suffix="mask.nii.gz"))
-                            
+                           
 rule merge_mask:
     input:
         expand('raw_data/nnUNet_predictions/{arch}/{unettask}/'

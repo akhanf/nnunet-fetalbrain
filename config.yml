@@ -4,6 +4,13 @@ in_bold: '../fetal_data/sub-{subject}/func/sub-{subject}_task-{task}_bold.nii.gz
 in_bold_train: '../fetal_data/sub-{subject,S6|S7|S9}/func/sub-{subject}_task-{task}_bold.nii.gz'
 in_bold_test: '../fetal_data/sub-{subject,S1|S3|S10}/func/sub-{subject}_task-{task}_bold.nii.gz'
 
+use_downloaded: 'trainS6S7S9' #if this doesn't exist in download_model, then will train instead
+
+download_model:
+  trainS6S7S9:
+    url: 'https://www.dropbox.com/s/sx7mnk1ojopjd37/trained_model.3d_fullres.Task102_fetal_brain_bold_trainS5to9.nnUNetTrainerV2.model_best.tar'
+    tar: 'trained_model.3d_fullres.Task102_fetal_brain_bold_trainS5to9.nnUNetTrainerV2.model_best.tar'
+    out: 'nnUNet/3d_fullres/Task102_fetal_brain_bold_trainS5to9/nnUNetTrainerV2__nnUNetPlansv2.1/fold_{fold}/model_best.model'
 
 unettask: Task102_fetal_brain_bold_trainS5to9 #must be Task###_name where ### is >= 100
 trainer: nnUNetTrainerV2
