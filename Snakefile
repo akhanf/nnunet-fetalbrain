@@ -59,7 +59,7 @@ rule all_test:
 model = config['use_downloaded']
 
 if model in config['download_model'].keys():
-
+    
     rule download_model:
         params: 
             url = config['download_model'][model]['url']
@@ -68,7 +68,8 @@ if model in config['download_model'].keys():
 
     rule extract_model:
         input: config['download_model'][model]['tar']
-        output: expand(os.path.join('trained_models',config['download_model'][model]['out']),fold=range(5))
+        output: 
+            models = expand(os.path.join('trained_models',config['download_model'][model]['out']),fold=range(5)),
         shell: 'mkdir -p trained_model && tar -C trained_models -xvf {input}'
 
 
@@ -80,6 +81,8 @@ rule split:
     output: 
         expand(bids(subject='{subject}',task='{task}',suffix="bold{vol:04d}.nii.gz"),vol=range(nvols),allow_missing=True)
     shell: 'fslsplit {input} {params.prefix} -t'
+
+
 
 rule splitmask:
     """ splits 4d mask vol """
@@ -111,7 +114,8 @@ rule cp_training_img:
 
 rule cp_test_img:
     input: bids(subject='{subject}',task='{task}',desc='zeropad',suffix="bold{vol}.nii.gz")
-    output: 'raw_data/nnUNet_raw_data/{unettask}/imagesTs/fetal_sub-{subject}_task-{task}_vol-{vol}_0000.nii.gz'
+    output: 'raw_data/nnUNet_raw_data/{unettask}/imagesTs/sub-{subject}_task-{task}/'
+            'fetal_sub-{subject}_task-{task}_vol-{vol}_0000.nii.gz'
     threads: 32 #to make it serial on a node
     group: 'preproc'
     shell: 'cp {input} {output}'
@@ -177,8 +181,6 @@ rule train_fold:
         #add --continue_training option if a checkpoint exists
         checkpoint_opt = get_checkpoint_opt
     output:
-#        model_dir = directory('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}'),
-#        final_model = 'trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/model_final_checkpoint.model',
         latest_model = 'trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/model_latest.model',
         best_model = 'trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/model_best.model'
     threads: 16
@@ -209,23 +211,23 @@ rule package_trained_model:
 
 rule predict_test_subj:
     input:
-        in_training_folder = expand('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}',fold=range(5),allow_missing=True),
-        latest_model = expand('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/{checkpoint}.model',fold=range(5),allow_missing=True),
+        model = expand('trained_models/nnUNet/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/fold_{fold}/{checkpoint}.model',fold=range(5),allow_missing=True),
         testing_imgs = expand(
                             'raw_data/nnUNet_raw_data/{unettask}/'
-                            'imagesTs/fetal_{imgid}_0000.nii.gz',
-                            imgid=test_imgids,
+                            'imagesTs/sub-{subject}_task-{task}/'
+                            'fetal_sub-{subject}_task-{task}_vol-{vol:04d}_0000.nii.gz',
+                            vol=range(nvols),
                             allow_missing=True),
     params:
-        in_folder = 'raw_data/nnUNet_raw_data/{unettask}/imagesTs',
+        in_folder = 'raw_data/nnUNet_raw_data/{unettask}/imagesTs/sub-{subject}_task-{task}',
         out_folder = 'raw_data/nnUNet_predictions/{arch}/{unettask}/{trainer}__nnUNetPlansv2.1/{checkpoint}',
         nnunet_env_cmd = get_nnunet_env,
     output:
         predicted_lbls = expand(
                             'raw_data/nnUNet_predictions/{arch}/{unettask}/'
                             '{trainer}__nnUNetPlansv2.1/{checkpoint}/'
-                            'fetal_{imgid}.nii.gz',
-                            imgid=test_imgids,
+                            'fetal_sub-{subject}_task-{task}_vol-{vol:04d}.nii.gz',
+                            vol=range(nvols),
                             allow_missing=True)
     threads: 8 
     resources:
