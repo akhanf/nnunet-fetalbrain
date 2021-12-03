@@ -80,6 +80,7 @@ rule split:
         prefix = bids(subject='{subject}',task='{task}',suffix="bold"),
     output: 
         expand(bids(subject='{subject}',task='{task}',suffix="bold{vol:04d}.nii.gz"),vol=range(nvols),allow_missing=True)
+    container: 'docker://brainlife/fsl:6.0.4'
     shell: 'fslsplit {input} {params.prefix} -t'
 
 
@@ -91,17 +92,20 @@ rule splitmask:
         prefix = bids(subject='{subject}',task='{task}',suffix="mask"),
     output: 
         expand(bids(subject='{subject}',task='{task}',suffix="mask{vol:04d}.nii.gz"),vol=range(nvols),allow_missing=True)
+    container: 'docker://brainlife/fsl:6.0.4'
     shell: 'fslsplit {input} {params.prefix} -t'
 
 # we resample and zero-pad so the bold data matches the masks.. 
 rule resample:
     input: bids(subject='{subject}',task='{task}',suffix="bold{vol}.nii.gz")
     output: bids(subject='{subject}',task='{task}',desc='resampled',suffix="bold{vol}.nii.gz")
+    container: 'docker://afni/afni_dev_base:AFNI_21.1.03'
     shell: '3dresample -dxyz 3.5 3.5 3.5 -prefix {output} -input {input}'
 
 rule zeropad:
     input: bids(subject='{subject}',task='{task}',desc='resampled',suffix="bold{vol}.nii.gz")
     output: bids(subject='{subject}',task='{task}',desc='zeropad',suffix="bold{vol}.nii.gz")
+    container: 'docker://afni/afni_dev_base:AFNI_21.1.03'
     shell: '3dZeropad -RL 96 -AP 96 -prefix {output} {input}'
 
 

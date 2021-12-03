@@ -2,6 +2,8 @@
 
 Snakemake workflow for fetal bold brain segmentation
 
+If you don't have AFNI and FSL installed, you need to use the `--use-singularity` option when running `snakemake`.
+
 Training is best with a GPU, but inference can be done reasonably fast with CPU only.
 
 ### Step 1: Obtain a copy of this workflow
