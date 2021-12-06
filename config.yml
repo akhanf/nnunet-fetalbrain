@@ -1,18 +1,33 @@
 in_mask: 'fetal_data/sub-{subject}/masks/sub-{subject}_task-{task}_bold_mask.nii.gz'
 in_bold: 'fetal_data/sub-{subject}/func/sub-{subject}_task-{task}_bold.nii.gz'
 
-in_bold_train: 'fetal_data/sub-{subject,S6|S7|S9}/func/sub-{subject}_task-{task}_bold.nii.gz'
-in_bold_test: 'fetal_data/sub-{subject,S1|S3|S10}/func/sub-{subject}_task-{task}_bold.nii.gz'
+in_bold_train: 'fetal_data/sub-{subject,S1|S3|S6|S7|S9|S10}/func/sub-{subject}_task-{task}_bold.nii.gz'
+in_bold_test: 'fetal_data/sub-{subject}/func/sub-{subject}_task-{task}_bold.nii.gz'
 
-use_downloaded: 'trainS6S7S9' #if this doesn't exist in download_model, then will train instead
+use_downloaded: 'train6subj' #if this doesn't exist in download_model, then will train instead
 
 download_model:
   trainS6S7S9:
     url: 'https://www.dropbox.com/s/sx7mnk1ojopjd37/trained_model.3d_fullres.Task102_fetal_brain_bold_trainS5to9.nnUNetTrainerV2.model_best.tar'
     tar: 'trained_model.3d_fullres.Task102_fetal_brain_bold_trainS5to9.nnUNetTrainerV2.model_best.tar'
     out: 'nnUNet/3d_fullres/Task102_fetal_brain_bold_trainS5to9/nnUNetTrainerV2__nnUNetPlansv2.1/fold_{fold}/model_best.model'
+    trained_on:
+      - S6
+      - S7
+      - S9
+  train6subj:
+    url: 'https://www.dropbox.com/s/2hv2zher9humicr/trained_model.3d_fullres.Task103_fetal_brain_bold_train6subj.nnUNetTrainerV2.model_best.tar'
+    tar: 'trained_model.3d_fullres.Task103_fetal_brain_bold_train6subj.nnUNetTrainerV2.model_best.tar'
+    out: 'nnUNet/3d_fullres/Task103_fetal_brain_bold_train6subj/nnUNetTrainerV2__nnUNetPlansv2.1/fold_{fold}/model_best.model'
+    trained_on:
+      - S1
+      - S3
+      - S6
+      - S7
+      - S9
+      - S10
 
-unettask: Task102_fetal_brain_bold_trainS5to9 #must be Task###_name where ### is >= 100
+unettask: Task103_fetal_brain_bold_train6subj #must be Task###_name where ### is >= 100
 trainer: nnUNetTrainerV2
 architecture: 3d_fullres
 checkpoint: model_best
